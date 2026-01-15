@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Node.js
+node_modules/
+.nuxt/
+.output/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Output files
+output/*.pdf
+output/*.xlsx
+downloads/*.pdf
+downloads/covers/
+
+# Session data
+output/session_data.json
+
+# User data (contains sensitive information)
+output/users.json
+output/user_*/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

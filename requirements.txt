@@ -1,0 +1,35 @@
+# Doçentlik Atıf Dosyası Oluşturma Aracı
+# Windows 11 için bağımlılıklar
+
+# Web Scraping (Playwright Stealth)
+playwright>=1.40.0
+playwright-stealth>=1.0.6
+
+# PDF İşleme
+pypdf>=3.17.0
+pdfplumber>=0.10.0
+reportlab>=4.0.0
+
+# Excel İşleme
+openpyxl>=3.1.0
+
+# Genel
+requests>=2.31.0
+
+# ============================================
+# KURULUM:
+# ============================================
+# 
+# 1. Virtual environment oluştur (önerilir):
+#    python -m venv venv
+#    venv\Scripts\activate
+#
+# 2. Paketleri yükle:
+#    pip install -r requirements.txt
+#
+# 3. Playwright tarayıcılarını yükle:
+#    playwright install chromium
+#
+# 4. Programı çalıştır:
+#    python main.py
+# ============================================
