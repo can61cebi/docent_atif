@@ -202,21 +202,37 @@ class PDFProcessor:
                     break
         
         # Fallback: Proximity search for tricky PDFs (only in reference pages)
+        # Enhanced to handle two-column layouts and bracket-style references
         if not ref_num and first_author_norm:
             for page in ref_pages:
                 text_norm = normalize_text(page.text)
                 for m in re.finditer(re.escape(first_author_norm), text_norm, re.IGNORECASE):
                     start_idx = m.start()
-                    window_start = max(0, start_idx - 50)
+                    # Wider window for two-column layouts (100 chars back)
+                    window_start = max(0, start_idx - 100)
                     window_text = text_norm[window_start:start_idx]
                     
+                    # Try [31] format first (bracket style)
+                    match_bracket = re.search(r'\[(\d+)\]\s*$', window_text.strip())
+                    if match_bracket:
+                        potential_ref = int(match_bracket.group(1))
+                        window_end = min(len(text_norm), start_idx + 300)
+                        after_text = text_norm[start_idx:window_end]
+                        if re.search(years_pattern, after_text):
+                            print(f"✅ Proximity Match (bracket): Sayfa {page.page_number} -> Ref [{potential_ref}]")
+                            ref_num = potential_ref
+                            ref_page_num = page.page_number
+                            page.is_reference_page = True
+                            break
+                    
+                    # Try 31. format (dot style)
                     match_back = re.search(r'(\d+)\s*\.\s*$', window_text.strip())
                     if match_back:
                         potential_ref = int(match_back.group(1))
                         window_end = min(len(text_norm), start_idx + 300)
                         after_text = text_norm[start_idx:window_end]
                         if re.search(years_pattern, after_text):
-                            print(f"✅ Proximity Match: Sayfa {page.page_number} -> Ref {potential_ref}")
+                            print(f"✅ Proximity Match (dot): Sayfa {page.page_number} -> Ref {potential_ref}")
                             ref_num = potential_ref
                             ref_page_num = page.page_number
                             page.is_reference_page = True

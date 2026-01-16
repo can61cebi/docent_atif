@@ -20,7 +20,7 @@
           <div class="lg:col-span-2">
              <div 
               :class="[
-                'h-[220px] p-6 border-2 border-dashed rounded-lg text-center transition-all cursor-pointer flex flex-col items-center justify-center',
+                'h-[280px] p-6 border-2 border-dashed rounded-lg text-center transition-all cursor-pointer flex flex-col items-center justify-center',
                 isDragging 
                   ? 'border-blue-500 bg-blue-50 scale-[1.02] shadow-lg' 
                   : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
@@ -81,24 +81,65 @@
           </div>
 
           <!-- Uploaded Files Stats/List -->
-          <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-[220px]">
-            <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-t-lg">
+          <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col h-[280px]">
+            <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-t-lg flex items-center justify-between">
               <h3 class="text-sm font-medium text-gray-700">Yüklenen Dosyalar</h3>
+              <div class="flex gap-2 text-[10px]">
+                <span class="px-1.5 py-0.5 rounded bg-green-50 text-green-600">{{ uploadedFiles.filter(f => f.status === 'matched').length }} Eşleşti</span>
+                <span class="px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">{{ uploadedFiles.filter(f => f.status === 'unmatched').length }} Bekliyor</span>
+              </div>
             </div>
             <div class="p-0 flex-1 overflow-y-scroll">
               <ul v-if="uploadedFiles.length > 0" class="divide-y divide-gray-100">
-                <li v-for="(file, i) in uploadedFiles" :key="i" class="px-4 py-2 flex items-center justify-between hover:bg-gray-50 text-xs">
-                  <div class="flex items-center gap-2 overflow-hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <span class="truncate text-gray-600" :title="file.name">{{ getFilename(file.name) }}</span>
+                <li v-for="(file, i) in uploadedFiles" :key="i" class="px-3 py-2 hover:bg-gray-50 text-xs">
+                  <!-- File info row -->
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2 overflow-hidden flex-1">
+                      <!-- Status icon -->
+                      <span v-if="file.status === 'matched'" class="text-green-500" title="Eşleşti">✓</span>
+                      <span v-else-if="file.status === 'extracting'" class="text-blue-500 animate-pulse" title="DOI çıkarılıyor...">⟳</span>
+                      <span v-else-if="file.status === 'uploading'" class="text-gray-400 animate-pulse" title="Yükleniyor...">↑</span>
+                      <span v-else class="text-orange-500" title="Eşleşme bulunamadı">⚠</span>
+                      
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span class="truncate text-gray-600" :title="file.name">{{ getFilename(file.name) }}</span>
+                    </div>
+                    <button @click="removeUploadedFile(file.name)" class="text-gray-400 hover:text-red-500 p-1 cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
-                  <button @click="removeUploadedFile(file.name)" class="text-gray-400 hover:text-red-500 p-1 cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  
+                  <!-- Match info / Manual select -->
+                  <div class="ml-6 text-[10px]">
+                    <!-- Matched: show article name -->
+                    <div v-if="file.status === 'matched' && file.matchedArticleIndex !== undefined" class="text-green-600">
+                      → {{ articles[file.matchedArticleIndex]?.title?.substring(0, 50) }}...
+                    </div>
+                    
+                    <!-- Extracting DOI -->
+                    <div v-else-if="file.status === 'extracting'" class="text-blue-500">
+                      PDF'den DOI çıkarılıyor...
+                    </div>
+                    
+                    <!-- Unmatched: show dropdown -->
+                    <div v-else-if="file.status === 'unmatched'" class="flex items-center gap-2">
+                      <span class="text-orange-600">Eşleşmedi</span>
+                      <span v-if="file.extractedDoi" class="text-gray-400">(DOI: {{ file.extractedDoi.substring(0, 25) }}...)</span>
+                      <select 
+                        @change="(e) => manualMatch(i, parseInt((e.target as HTMLSelectElement).value))"
+                        class="text-[10px] border border-gray-200 rounded px-1 py-0.5 bg-white"
+                      >
+                        <option value="">Manuel Seç...</option>
+                        <option v-for="(art, artIdx) in unmatchedArticles" :key="artIdx" :value="art.originalIndex">
+                          {{ artIdx + 1 }}. {{ art.article.title?.substring(0, 40) }}...
+                        </option>
+                      </select>
+                    </div>
+                  </div>
                 </li>
               </ul>
               <div v-else class="h-full flex flex-col items-center justify-center p-4 text-center">
@@ -309,7 +350,11 @@ import { ref, computed, onMounted } from 'vue'
 
 interface UploadedFile {
   name: string;
-  file: File;
+  file: File | null;
+  status: 'uploading' | 'extracting' | 'matched' | 'unmatched' | 'error';
+  extractedDoi?: string;
+  matchedArticleIndex?: number;
+  errorMessage?: string;
 }
 
 const articles = ref<any[]>([])
@@ -321,6 +366,13 @@ const uploadingFiles = ref<string[]>([])
 
 const completedCount = computed(() => articles.value.filter(a => isArticleComplete(a)).length)
 const canContinue = computed(() => articles.value.length > 0 && articles.value.every(a => isArticleComplete(a)))
+
+// Articles without PDF for manual matching dropdown
+const unmatchedArticles = computed(() => {
+  return articles.value
+    .map((article, idx) => ({ article, originalIndex: idx }))
+    .filter(x => !x.article.pdf_path)
+})
 
 const isArticleComplete = (article: any) => {
   return article.pdf_path && article.cover_pages?.length > 0
@@ -385,9 +437,41 @@ onMounted(async () => {
     console.error("Failed to fetch session data:", e)
   }
 
-  // Restore file list display
-  const usedPaths = articles.value.map(a => a.pdf_path).filter(Boolean)
-  uploadedFiles.value = usedPaths.map(path => ({ name: path, file: null as any }))
+  // Restore uploaded files from session (if available)
+  try {
+    const sessionData = await $fetch('/api/session-get')
+    if (sessionData.success && (sessionData as any).uploaded_files?.length > 0) {
+      // Restore with proper status based on article matching
+      uploadedFiles.value = (sessionData as any).uploaded_files.map((name: string) => {
+        const matchedIdx = articles.value.findIndex(a => a.pdf_path === name)
+        return { 
+          name, 
+          file: null, 
+          status: matchedIdx >= 0 ? 'matched' as const : 'unmatched' as const,
+          matchedArticleIndex: matchedIdx >= 0 ? matchedIdx : undefined
+        }
+      })
+      console.log("Loaded uploaded files from server session:", uploadedFiles.value.length)
+    } else {
+      // Fallback: Restore from articles' pdf_path
+      const usedPaths = articles.value.map((a, idx) => ({ path: a.pdf_path, idx })).filter(x => x.path)
+      uploadedFiles.value = usedPaths.map(x => ({ 
+        name: x.path, 
+        file: null, 
+        status: 'matched' as const,
+        matchedArticleIndex: x.idx
+      }))
+    }
+  } catch (e) {
+    // Fallback if fetch fails
+    const usedPaths = articles.value.map((a, idx) => ({ path: a.pdf_path, idx })).filter(x => x.path)
+    uploadedFiles.value = usedPaths.map(x => ({ 
+      name: x.path, 
+      file: null, 
+      status: 'matched' as const,
+      matchedArticleIndex: x.idx
+    }))
+  }
 })
 
 // Bulk Upload Logic
@@ -405,64 +489,135 @@ const handleBulkUpload = (e: Event) => {
 }
 
 const processFiles = async (files: File[]) => {
-  let matchedCount = 0
-  
   for (const file of files) {
-    // Add to uploaded list if not exists
-    if (!uploadedFiles.value.some(f => f.name === file.name)) {
-      uploadedFiles.value.push({ name: file.name, file: file })
-    }
-
-    // Matching Logic
-    const filename = file.name.toLowerCase()
+    // Check if already in list
+    const existingIdx = uploadedFiles.value.findIndex(f => f.name === file.name)
+    if (existingIdx >= 0) continue
     
-    // 1. Try matching by DOI (Robust)
-    let matchedArticle = articles.value.find(a => {
-      if (!a.doi) return false
-      const cleanDoi = a.doi.toLowerCase()
-      const doiSlug = cleanDoi.replace(/\//g, '_')
-      const doiSlug2 = cleanDoi.replace(/\//g, '-')
-      
-      // Check full DOI variations
-      if (filename.includes(doiSlug) || filename.includes(doiSlug2)) return true
-      
-      // Check DOI Suffix only (after last slash)
-      if (cleanDoi.includes('/')) {
-          const suffix = cleanDoi.split('/').pop()
-          if (suffix && filename.includes(suffix)) return true
-      }
-      return false
-    })
-
-    // 2. Try matching by Title (Fuzzy)
-    if (!matchedArticle) {
-      matchedArticle = articles.value.find(a => {
-        const titleWords = a.title.toLowerCase().replace(/[^a-z0-9]/g, ' ').split(' ').filter((w: string) => w.length > 3)
-        if (titleWords.length < 2) return false
-        
-        // Count how many significant title words appear in the filename
-        const matchCount = titleWords.reduce((acc: number, word: string) => acc + (filename.includes(word) ? 1 : 0), 0)
-        // Require at least 3 words match or 50% of words if title is short
-        return matchCount >= Math.min(3, Math.ceil(titleWords.length * 0.5))
-      })
+    // Add to uploaded list with uploading status
+    const uploadedFile: UploadedFile = { 
+      name: file.name, 
+      file: file,
+      status: 'uploading'
     }
-
-    if (matchedArticle) {
+    uploadedFiles.value.push(uploadedFile)
+    
+    // Try filename-based matching first (fast)
+    let matchedArticle = matchByFilename(file.name)
+    let matchedIndex = matchedArticle ? articles.value.indexOf(matchedArticle) : -1
+    
+    // If no match, try DOI extraction from PDF content
+    if (!matchedArticle) {
+      uploadedFile.status = 'extracting'
+      
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        const response = await $fetch<{success: boolean; doi?: string; found?: boolean}>('/api/extract-doi', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (response.success && response.found && response.doi) {
+          uploadedFile.extractedDoi = response.doi
+          
+          // Match by extracted DOI
+          matchedArticle = articles.value.find(a => {
+            if (!a.doi) return false
+            return a.doi.toLowerCase() === response.doi?.toLowerCase()
+          })
+          matchedIndex = matchedArticle ? articles.value.indexOf(matchedArticle) : -1
+        }
+      } catch (e) {
+        console.error('DOI extraction failed:', e)
+      }
+    }
+    
+    // Update status based on result
+    if (matchedArticle && matchedIndex >= 0) {
+      uploadedFile.status = 'matched'
+      uploadedFile.matchedArticleIndex = matchedIndex
+      
+      // Update article
       matchedArticle.pdf_path = file.name
-      // Reset ALL old citation data to force fresh check
       matchedArticle.citation_status = 'checking'
       matchedArticle.citation_pages = []
       matchedArticle.citation_page = null
       matchedArticle.reference_page = null
       matchedArticle.reference_number = null
-      matchedCount++
-      saveArticles()
-
-      // Perform Real Upload & Check
+      
+      // Perform citation check
       await checkCitation(file, matchedArticle)
+    } else {
+      uploadedFile.status = 'unmatched'
     }
   }
+  
+  // Always save after processing files
+  saveArticles()
 }
+
+// Helper: Match by filename (DOI or title words)
+const matchByFilename = (filename: string): any => {
+  const lower = filename.toLowerCase()
+  
+  // Try DOI variations
+  let matched = articles.value.find(a => {
+    if (!a.doi) return false
+    const cleanDoi = a.doi.toLowerCase()
+    const doiSlug = cleanDoi.replace(/\//g, '_')
+    const doiSlug2 = cleanDoi.replace(/\//g, '-')
+    
+    if (lower.includes(doiSlug) || lower.includes(doiSlug2)) return true
+    
+    if (cleanDoi.includes('/')) {
+      const suffix = cleanDoi.split('/').pop()
+      if (suffix && lower.includes(suffix)) return true
+    }
+    return false
+  })
+  
+  // Try title words
+  if (!matched) {
+    matched = articles.value.find(a => {
+      const titleWords = a.title.toLowerCase().replace(/[^a-z0-9]/g, ' ').split(' ').filter((w: string) => w.length > 3)
+      if (titleWords.length < 2) return false
+      const matchCount = titleWords.reduce((acc: number, word: string) => acc + (lower.includes(word) ? 1 : 0), 0)
+      return matchCount >= Math.min(3, Math.ceil(titleWords.length * 0.5))
+    })
+  }
+  
+  return matched
+}
+
+// Manual match function
+const manualMatch = async (fileIndex: number, articleIndex: number) => {
+  const uploadedFile = uploadedFiles.value[fileIndex]
+  const article = articles.value[articleIndex]
+  
+  if (!uploadedFile || !article) return
+  
+  // Update uploaded file
+  uploadedFile.status = 'matched'
+  uploadedFile.matchedArticleIndex = articleIndex
+  
+  // Update article
+  article.pdf_path = uploadedFile.name
+  article.citation_status = 'checking'
+  article.citation_pages = []
+  article.citation_page = null
+  article.reference_page = null
+  article.reference_number = null
+  
+  // Perform citation check if we have the file object
+  if (uploadedFile.file) {
+    await checkCitation(uploadedFile.file, article)
+  }
+  
+  saveArticles()
+}
+
 
 const checkCitation = async (file: File, article: any) => {
     if (!file) return // Can't check if we just restored state without file object
@@ -606,11 +761,17 @@ const saveArticles = async () => {
     return rest
   })
   
+  // Get uploaded file names to persist
+  const uploadedFileNames = uploadedFiles.value.map(f => f.name)
+  
   // Sync to server session only (user-specific)
   try {
     await $fetch('/api/session-save', {
       method: 'POST',
-      body: { citing_articles: toSave }
+      body: { 
+        citing_articles: toSave,
+        uploaded_files: uploadedFileNames
+      }
     })
   } catch (e) {
     console.error('Failed to sync articles to server:', e)

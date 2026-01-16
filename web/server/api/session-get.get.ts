@@ -27,7 +27,8 @@ export default defineEventHandler((event) => {
                 success: true,
                 candidate: parsed.candidate || null,
                 source_article: parsed.source_article || null,
-                citing_articles: parsed.citing_articles || []
+                citing_articles: parsed.citing_articles || [],
+                uploaded_files: parsed.uploaded_files || []
             }
         } catch (e) {
             return { success: false, error: "Failed to read session data" }

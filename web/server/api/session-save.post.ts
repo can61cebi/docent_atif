@@ -47,6 +47,11 @@ export default defineEventHandler(async (event) => {
             sessionData.citing_articles = body.citing_articles
         }
 
+        // Save uploaded files list
+        if (body.uploaded_files) {
+            sessionData.uploaded_files = body.uploaded_files
+        }
+
         // Merge article updates (for PDF matching results)
         if (body.update_article) {
             const { index, data } = body.update_article
