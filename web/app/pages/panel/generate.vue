@@ -130,12 +130,6 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error('Failed to load session:', e)
-    // Fallback to localStorage
-    candidateInfo.value = getSavedCandidateInfo() || {}
-    const savedArticles = localStorage.getItem('citingArticles')
-    if (savedArticles) {
-      try { articles.value = JSON.parse(savedArticles) } catch (e) {}
-    }
   }
 })
 

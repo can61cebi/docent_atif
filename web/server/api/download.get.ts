@@ -1,4 +1,4 @@
-import { defineEventHandler, getQuery } from 'h3'
+import { defineEventHandler, getQuery, getCookie } from 'h3'
 import { join } from 'path'
 import { existsSync, createReadStream } from 'fs'
 import { stat } from 'fs/promises'
@@ -14,19 +14,29 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    // Security: Only allow files from output or downloads directory
-    const projectRoot = join(process.cwd(), '..')
-    const outputDir = join(projectRoot, 'output')
-    const downloadsDir = join(projectRoot, 'downloads')
+    // Get userId from cookie
+    const userId = getCookie(event, 'userId')
 
-    const absolutePath = filePath.startsWith('C:') || filePath.startsWith('/') 
-        ? filePath 
+    if (!userId) {
+        throw createError({
+            statusCode: 401,
+            message: 'User not authenticated'
+        })
+    }
+
+    // Security: Only allow files from user's own output directory
+    const projectRoot = join(process.cwd(), '..')
+    const userOutputDir = join(projectRoot, 'output', `user_${userId}`)
+
+    const absolutePath = filePath.startsWith('C:') || filePath.startsWith('/')
+        ? filePath
         : join(projectRoot, filePath)
 
-    if (!absolutePath.startsWith(outputDir) && !absolutePath.startsWith(downloadsDir)) {
+    // Verify path is within user's directory
+    if (!absolutePath.includes(`user_${userId}`)) {
         throw createError({
             statusCode: 403,
-            message: 'Access denied'
+            message: 'Access denied: Cannot access files outside your directory'
         })
     }
 
@@ -43,7 +53,7 @@ export default defineEventHandler(async (event) => {
     // Set headers for download
     setHeaders(event, {
         'Content-Type': absolutePath.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${fileName}"`, 
+        'Content-Disposition': `attachment; filename="${fileName}"`,
         'Content-Length': fileStat.size.toString()
     })
 

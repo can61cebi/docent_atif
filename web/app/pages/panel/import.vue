@@ -144,10 +144,15 @@ const formatAuthors = (authors: string[] | undefined): string => {
   return `${authors.slice(0, 2).join(', ')} et al.`
 }
 
-onMounted(() => {
-  const saved = localStorage.getItem('citingArticles')
-  if (saved) {
-    try { articles.value = JSON.parse(saved) } catch (e) {}
+onMounted(async () => {
+  // Load from server session only (user-specific)
+  try {
+    const sessionData = await $fetch('/api/session-get')
+    if (sessionData.success && sessionData.citing_articles?.length > 0) {
+      articles.value = sessionData.citing_articles
+    }
+  } catch (e) {
+    console.error('Failed to load session:', e)
   }
 })
 
@@ -171,7 +176,6 @@ const parseFile = async () => {
     const text = await selectedFile.value.text()
     const parsed = parseWoSFile(text)
     articles.value = parsed
-    localStorage.setItem('citingArticles', JSON.stringify(parsed))
   } finally { isProcessing.value = false }
 }
 
@@ -284,10 +288,7 @@ const convertWoSToArticle = (data: Record<string, any>): any | null => {
 }
 
 const saveAndContinue = async () => {
-  // Save to localStorage (for backward compatibility)
-  localStorage.setItem('citingArticles', JSON.stringify(articles.value))
-  
-  // Also save to server session
+  // Save to server session only (user-specific)
   try {
     await $fetch('/api/session-save', {
       method: 'POST',

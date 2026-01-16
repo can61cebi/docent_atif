@@ -372,18 +372,6 @@ onMounted(async () => {
         }
       })
       console.log("Loaded articles from server session:", articles.value.length)
-    } else {
-      // Fallback to localStorage
-      const saved = localStorage.getItem('citingArticles')
-      if (saved) {
-        try { 
-          articles.value = JSON.parse(saved).map((a: any) => ({
-            ...a,
-            cover_pages: a.cover_pages || [],
-            citation_status: a.citation_status || 'pending'
-          }))
-        } catch (e) {}
-      }
     }
     
     // Get source article from session
@@ -395,18 +383,6 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error("Failed to fetch session data:", e)
-    
-    // Fallback to localStorage
-    const saved = localStorage.getItem('citingArticles')
-    if (saved) {
-      try { 
-        articles.value = JSON.parse(saved).map((a: any) => ({
-          ...a,
-          cover_pages: a.cover_pages || [],
-          citation_status: a.citation_status || 'pending'
-        }))
-      } catch (e) {}
-    }
   }
 
   // Restore file list display
@@ -630,10 +606,7 @@ const saveArticles = async () => {
     return rest
   })
   
-  // Save to localStorage (backward compatibility)
-  localStorage.setItem('citingArticles', JSON.stringify(toSave))
-  
-  // Also sync to server session
+  // Sync to server session only (user-specific)
   try {
     await $fetch('/api/session-save', {
       method: 'POST',

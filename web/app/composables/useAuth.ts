@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useCookie } from '#app'
 
 interface User {
     id: string
@@ -18,6 +19,12 @@ export const useAuth = () => {
         if (saved) {
             try {
                 currentUser.value = JSON.parse(saved)
+
+                // Sync cookie for server-side identification
+                const userIdCookie = useCookie('userId', { maxAge: 60 * 60 * 24 * 30 })
+                if (currentUser.value) {
+                    userIdCookie.value = currentUser.value.id
+                }
             } catch (e) { }
         }
     }
@@ -34,6 +41,11 @@ export const useAuth = () => {
             if (response.success && response.user) {
                 currentUser.value = response.user as User
                 localStorage.setItem('currentUser', JSON.stringify(response.user))
+
+                // Set cookie for server-side identification
+                const userIdCookie = useCookie('userId', { maxAge: 60 * 60 * 24 * 30 }) // 30 days
+                userIdCookie.value = response.user.id
+
                 return { success: true, user: response.user }
             }
 
@@ -53,6 +65,11 @@ export const useAuth = () => {
             if (response.success && response.user) {
                 currentUser.value = response.user as User
                 localStorage.setItem('currentUser', JSON.stringify(response.user))
+
+                // Set cookie for server-side identification
+                const userIdCookie = useCookie('userId', { maxAge: 60 * 60 * 24 * 30 }) // 30 days
+                userIdCookie.value = response.user.id
+
                 return { success: true, user: response.user }
             }
 
@@ -65,6 +82,10 @@ export const useAuth = () => {
     const logout = () => {
         currentUser.value = null
         localStorage.removeItem('currentUser')
+
+        // Clear cookie
+        const userIdCookie = useCookie('userId')
+        userIdCookie.value = null
     }
 
     const updateUser = (updates: Partial<User>) => {
